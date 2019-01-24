@@ -1,7 +1,6 @@
 import numpy as np
 import csv
 
-
 def C(x):
     return np.cos(x)
 
@@ -118,6 +117,12 @@ class PhysicsSim():
         return thrusts
 
     def next_timestep(self, rotor_speeds):
+        """
+        :param rotor_speeds: The current rotor speeds (to calculate thrust)
+        :type rotor_speeds: A list of 4 rotor speeds
+        :return  True if we've exceeded our runtime ?
+        :rtype: bool
+        """
         self.calc_prop_wind_speed()
         thrusts = self.get_propeler_thrust(rotor_speeds)
         self.linear_accel = self.get_linear_forces(thrusts) / self.mass

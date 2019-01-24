@@ -19,7 +19,7 @@ class Task():
         self.action_repeat = 3
 
         self.state_size = self.action_repeat * 6
-        self.action_low = 0
+        self.action_low = 100
         self.action_high = 900
         self.action_size = 4
 
@@ -32,7 +32,11 @@ class Task():
         return reward
 
     def step(self, rotor_speeds):
-        """Uses action to obtain next state, reward, done."""
+        """
+        Uses action to obtain next state, reward, done.
+        Where next_state is an ndarray.
+        """
+        done = None
         reward = 0
         pose_all = []
         for _ in range(self.action_repeat):
