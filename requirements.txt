@@ -8,3 +8,4 @@ ipython
 jupyter
 ipykernel
 pip
+nomkl  # avoids problems on Mac with libiomp5.dylib
