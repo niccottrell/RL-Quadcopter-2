@@ -1,10 +1,12 @@
 import numpy as np
 from physics_sim import PhysicsSim
 
+
 class Task():
     """Task (environment) that defines the goal and provides feedback to the agent."""
-    def __init__(self, init_pose=None, init_velocities=None, 
-        init_angle_velocities=None, runtime=5., target_pos=None):
+
+    def __init__(self, init_pose=None, init_velocities=None,
+                 init_angle_velocities=None, runtime=5., target_pos=None):
         """Initialize a Task object.
         Params
         ======
@@ -15,7 +17,7 @@ class Task():
             target_pos: target/goal (x,y,z) position for the agent
         """
         # Simulation
-        self.sim = PhysicsSim(init_pose, init_velocities, init_angle_velocities, runtime) 
+        self.sim = PhysicsSim(init_pose, init_velocities, init_angle_velocities, runtime)
         self.action_repeat = 3
 
         self.state_size = self.action_repeat * 6
@@ -24,13 +26,18 @@ class Task():
         self.action_size = 4
 
         # Goal
-        self.target_pos = target_pos if target_pos is not None else np.array([0., 0., 10.]) 
+        self.target_pos = target_pos if target_pos is not None else np.array([0., 0., 10.])
 
     def get_reward(self):
-        """Uses current pose of sim to return reward."""
-        reward = 1.-.3*(abs(self.sim.pose[:3] - self.target_pos)).sum()
+        """
+        Uses current pose of sim to return reward.
+        """
+        current_pos = self.sim.pose[:3]
+        reward = 20. - 8. * (abs(current_pos - self.target_pos)).sum()
+        # penalize angular velocity (avoid spinning)
+        reward -= 3. * (abs(self.sim.angular_v)).sum()
         # reward low absolute velocity - we want to hover in position
-        v__sum = (abs(self.sim.v)).sum()
+        v__sum = 4. * (abs(self.sim.v)).sum()
         reward -= v__sum
         return reward
 
@@ -43,8 +50,8 @@ class Task():
         reward = 0
         pose_all = []
         for _ in range(self.action_repeat):
-            done = self.sim.next_timestep(rotor_speeds) # update the sim pose and velocities
-            reward += self.get_reward() 
+            done = self.sim.next_timestep(rotor_speeds)  # update the sim pose and velocities
+            reward += self.get_reward()
             pose_all.append(self.sim.pose)
         next_state = np.concatenate(pose_all)
         return next_state, reward, done
@@ -53,5 +60,7 @@ class Task():
         """Reset the sim to start a new episode."""
         # print("task.reset")
         self.sim.reset()
-        state = np.concatenate([self.sim.pose] * self.action_repeat) 
+        state = np.concatenate([self.sim.pose] * self.action_repeat)
         return state
+
+
