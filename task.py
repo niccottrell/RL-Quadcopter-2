@@ -1,5 +1,9 @@
+import math
+
 import numpy as np
 from physics_sim import PhysicsSim
+
+REWARD_MAX = 30.
 
 
 class Task():
@@ -33,12 +37,16 @@ class Task():
         Uses current pose of sim to return reward.
         """
         current_pos = self.sim.pose[:3]
-        reward = 20. - 8. * (abs(current_pos - self.target_pos)).sum()
+        pos_diff_sum = abs(current_pos - self.target_pos).sum()
+        reward = REWARD_MAX * (1. / (1 + math.log(1 + pos_diff_sum)))  # as difference gets bigger this closer to zero
         # penalize angular velocity (avoid spinning)
         reward -= 3. * (abs(self.sim.angular_v)).sum()
         # reward low absolute velocity - we want to hover in position
         v__sum = 4. * (abs(self.sim.v)).sum()
         reward -= v__sum
+        # clip the reward so that it's never too low
+        if reward < -REWARD_MAX: reward = -REWARD_MAX
+        if reward > REWARD_MAX: reward = REWARD_MAX
         return reward
 
     def step(self, rotor_speeds):
@@ -58,9 +66,6 @@ class Task():
 
     def reset(self):
         """Reset the sim to start a new episode."""
-        # print("task.reset")
         self.sim.reset()
         state = np.concatenate([self.sim.pose] * self.action_repeat)
         return state
-
-
