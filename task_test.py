@@ -5,6 +5,7 @@ from task import Task
 
 from train import *
 
+
 class TestTask(unittest.TestCase):
 
     def test_init(self):

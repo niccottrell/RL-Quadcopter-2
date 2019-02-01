@@ -96,6 +96,12 @@ class Actor:
             outputs=[],
             updates=updates_op)
 
+    def save_model(self):
+        self.model.save('actor_local.h5')
+
+    def load_model(self):
+        self.model.load_weights('actor_local.h5')
+
 
 class Critic:
     """Critic (Value) Model."""
@@ -160,6 +166,12 @@ class Critic:
         self.get_action_gradients = K.function(
             inputs=[*self.model.input, K.learning_phase()],
             outputs=action_gradients)
+
+    def save_model(self):
+        self.model.save('critic_local.h5')
+
+    def load_model(self):
+        self.model.load_weights('critic_local.h5')
 
 
 class Nic_Agent():
@@ -271,6 +283,16 @@ class Nic_Agent():
 
         new_weights = self.tau * local_weights + (1 - self.tau) * target_weights
         target_model.set_weights(new_weights)
+
+    def save_models(self):
+        # Save model
+        self.actor_local.save_model()
+        self.critic_local.save_model()
+
+    def load_weights(self):
+        self.actor_local.load_model()
+        self.critic_local.load_model()
+
 
 
 class OUNoise:

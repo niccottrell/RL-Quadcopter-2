@@ -1,4 +1,6 @@
 import sys
+import traceback
+
 import numpy as np
 import csv
 import matplotlib.pyplot as plt
@@ -6,8 +8,8 @@ import matplotlib.pyplot as plt
 from agents.agent import Nic_Agent
 from task import Task
 
-num_episodes = 2000
-runtime = 5.  # time limit of the episode
+num_episodes = 20000
+runtime = 10.  # time limit of the episode
 init_pose = np.array([0., 0., 10., 0., 0., 0.])  # initial pose
 init_velocities = np.array([0.1, 0.2, 0.1])  # initial velocities
 init_angle_velocities = np.array([0.3, 0.2, 0.1])  # initial angle velocities
@@ -22,6 +24,11 @@ def train_plot():
     # Setup
     task = Task(init_pose, init_velocities, init_angle_velocities, runtime, target_pos)
     agent = Nic_Agent(task)
+    try:
+        agent.load_weights()  # load weights from save filed (if possible)
+    except:
+        traceback.print_exc()
+        pass
 
     # Train the agent
     training = {x : [] for x in ['episode_num', 'reward']}
@@ -31,7 +38,7 @@ def train_plot():
         initial_state = agent.reset_episode()
         for i_episode in range(1, num_episodes + 1):
             # state = agent.reset_episode()
-            state = task.reset() # reset the task BUT NOT the agent (otherwise we lose the model)
+            state = task.reset()  # reset the task BUT NOT the agent (otherwise we lose the model)
             while True:
                 action = agent.act(state)
                 next_state, reward, done = task.step(action)
@@ -44,6 +51,9 @@ def train_plot():
                     training['reward'].append(reward)
                     break
             sys.stdout.flush()
+
+    # save the weights to continue next time
+    agent.save_models()
 
     # Plot the training
     plt.plot(training['episode_num'], training['reward'], label='reward')
