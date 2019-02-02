@@ -35,17 +35,17 @@ def train_plot():
     with open("training.csv", 'w') as csvfile:
         writer = csv.writer(csvfile)
         writer.writerow(['episode_num', 'reward'])
-        initial_state = agent.reset_episode()
         for i_episode in range(1, num_episodes + 1):
-            # state = agent.reset_episode()
-            state = task.reset()  # reset the task BUT NOT the agent (otherwise we lose the model)
+            state = agent.reset_episode() # reset the agent and task (and sim)
+            # state = task.reset()  # reset the task BUT NOT the agent (otherwise we lose the model)
             while True:
-                action = agent.act(state)
-                next_state, reward, done = task.step(action)
-                agent.step(action, reward, next_state, done)
+                action = agent.act(state)  # Agent decides on rotor speeds
+                next_state, reward, done = task.step(action)  # Move a bit based on this rotor speed
+                # print("\rNext state = {},  reward = {} ".format(next_state, reward), end="")  # [debug]
+                agent.step(action, reward, next_state, done)  # Save and learn
                 state = next_state
                 if done:
-                    print("\rEpisode = {:4d},  reward = {:7.3f}".format(i_episode, reward), end="")  # [debug]
+                    print("\rEpisode = {:4d},  reward = {:7.3f} ".format(i_episode, reward), end="")  # [debug]
                     writer.writerow([i_episode, reward])
                     training['episode_num'].append(i_episode)
                     training['reward'].append(reward)
@@ -53,7 +53,7 @@ def train_plot():
             sys.stdout.flush()
 
     # save the weights to continue next time
-    agent.save_models()
+    # agent.save_models()
 
     # Plot the training
     plt.plot(training['episode_num'], training['reward'], label='reward')
