@@ -89,18 +89,12 @@ class Actor:
         # Incorporate any additional losses here (e.g. from regularizers)
 
         # Define optimizer and training function
-        optimizer = optimizers.Adam()
+        optimizer = optimizers.RMSprop() # optimizers.Adam()
         updates_op = optimizer.get_updates(params=self.model.trainable_weights, loss=loss)
         self.train_fn = K.function(
             inputs=[self.model.input, action_gradients, K.learning_phase()],
             outputs=[],
             updates=updates_op)
-
-    def save_model(self):
-        self.model.save('actor_local.h5')
-
-    def load_model(self):
-        self.model.load_weights('actor_local.h5')
 
 
 class Critic:
@@ -133,31 +127,35 @@ class Critic:
         states = layers.Input(shape=(self.state_size,), name='states')
         actions = layers.Input(shape=(self.action_size,), name='actions')
 
+        activation_dense = 'selu'  # 'relu'
+        activation_final = 'tanh'  # 'relu'
+
         # Add hidden layer(s) for state pathway
-        net_states = layers.Dense(units=32, activation='relu')(states)
-        net_states = layers.Dense(units=64, activation='relu')(net_states)
+        net_states = layers.Dense(units=32, activation=activation_dense)(states)
+        net_states = layers.Dense(units=64, activation=activation_dense)(net_states)
 
         # Add hidden layer(s) for action pathway
-        net_actions = layers.Dense(units=32, activation='relu')(actions)
-        net_actions = layers.Dense(units=64, activation='relu')(net_actions)
+        net_actions = layers.Dense(units=32, activation=activation_dense)(actions)
+        net_actions = layers.Dense(units=64, activation=activation_dense)(net_actions)
 
         # Try different layer sizes, activations, add batch normalization, regularizers, etc.
 
         # Combine state and action pathways
         net = layers.Add()([net_states, net_actions])
-        net = layers.Activation('relu')(net)
+        net = layers.Activation(activation_final)(net)
 
         # Add more layers to the combined network if needed
 
-        # Add final output layer to prduce action values (Q values)
+        # Add final output layer to produce action values (Q values)
         Q_values = layers.Dense(units=1, name='q_values')(net)
 
         # Create Keras model
         self.model = models.Model(inputs=[states, actions], outputs=Q_values)
 
         # Define optimizer and compile model for training with built-in loss function
-        optimizer = optimizers.Adam()
-        self.model.compile(optimizer=optimizer, loss='mse')
+        optimizer = optimizers.RMSprop()
+        loss = 'mean_squared_logarithmic_error'  # 'mse'
+        self.model.compile(optimizer=optimizer, loss=loss)
 
         # Compute action gradients (derivative of Q values w.r.t. to actions)
         action_gradients = K.gradients(Q_values, actions)
@@ -166,12 +164,6 @@ class Critic:
         self.get_action_gradients = K.function(
             inputs=[*self.model.input, K.learning_phase()],
             outputs=action_gradients)
-
-    def save_model(self):
-        self.model.save('critic_local.h5')
-
-    def load_model(self):
-        self.model.load_weights('critic_local.h5')
 
 
 class Nic_Agent():
@@ -208,13 +200,12 @@ class Nic_Agent():
 
         # Algorithm parameters
         self.gamma = 0.99  # discount factor
-        self.tau = 0.01  # for soft update of target parameters
+        self.tau = 0.001  # for soft update of target parameters
 
     def reset_episode(self):
         """
-        Reset the nose, task (INCLUDING MODELS) and
+        Reset the noise, task (sim and position) and state
         """
-        print("Nic_Agent.reset_episode")
         self.noise.reset()
         state = self.task.reset()
         self.last_state = state
@@ -284,14 +275,6 @@ class Nic_Agent():
         new_weights = self.tau * local_weights + (1 - self.tau) * target_weights
         target_model.set_weights(new_weights)
 
-    def save_models(self):
-        # Save model
-        self.actor_local.save_model()
-        self.critic_local.save_model()
-
-    def load_weights(self):
-        self.actor_local.load_model()
-        self.critic_local.load_model()
 
 
 
