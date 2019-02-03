@@ -120,7 +120,7 @@ class PhysicsSim():
         """
         :param rotor_speeds: The current rotor speeds (to calculate thrust)
         :type rotor_speeds: A list of 4 rotor speeds
-        :return  True if we've exceeded our runtime ?
+        :return  True if we've hit exceed our bounds (300x300m) OR we've exceeded our runtime
         :rtype: bool
         """
         self.calc_prop_wind_speed()
@@ -142,9 +142,11 @@ class PhysicsSim():
             if position[ii] <= self.lower_bounds[ii]:
                 new_positions.append(self.lower_bounds[ii])
                 self.done = True
+                self.done_cause = 'Lower bounds'
             elif position[ii] > self.upper_bounds[ii]:
                 new_positions.append(self.upper_bounds[ii])
                 self.done = True
+                self.done_cause = 'Upper bounds'
             else:
                 new_positions.append(position[ii])
 
@@ -152,4 +154,5 @@ class PhysicsSim():
         self.time += self.dt
         if self.time > self.runtime:
             self.done = True
+            self.done_cause = 'Ran out of time'
         return self.done

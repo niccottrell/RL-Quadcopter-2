@@ -1,10 +1,8 @@
-import math
-
+import numpy
 import numpy as np
 from physics_sim import PhysicsSim
 
-REWARD_MAX = 30.
-
+REWARD_MAX = 2.
 
 class Task():
     """Task (environment) that defines the goal and provides feedback to the agent."""
@@ -25,28 +23,39 @@ class Task():
         self.action_repeat = 3
 
         self.state_size = self.action_repeat * 6
-        self.action_low = 100  # Never spin too slow
+        self.action_low = 200  # Never spin too slow
         self.action_high = 900
         self.action_size = 4
 
         # Goal
         self.target_pos = target_pos if target_pos is not None else np.array([0., 0., 10.])
 
+    def computeDistance(self, a, b):
+        dist = numpy.linalg.norm(a - b)
+        return dist
+
     def get_reward(self):
         """
         Uses current pose of sim to return reward.
         """
         current_pos = self.sim.pose[:3]
-        pos_diff_sum = abs(current_pos - self.target_pos).sum()
-        reward = REWARD_MAX * (1. / (1 + math.log(1 + pos_diff_sum)))  # as difference gets bigger this closer to zero
+        # Get the distance to the target
+        distance = self.computeDistance(current_pos, self.target_pos)
+
+        # Find to difference along the z-axis [z2 - z1]
+        # create a bonus factor for current z being equal or greater than target z
+        # Negative value for z_diff if the copter is above the target z.
+        z_diff = self.target_pos[2] - self.sim.pose[2]
+        z_factor = 1.2 if z_diff <= 0 else 1.0
+
         # penalize angular velocity (avoid spinning)
-        reward -= 3. * (abs(self.sim.angular_v)).sum()
-        # reward low absolute velocity - we want to hover in position
-        v__sum = 4. * (abs(self.sim.v)).sum()
-        reward -= v__sum
-        # clip the reward so that it's never too low
-        if reward < -REWARD_MAX: reward = -REWARD_MAX
-        if reward > REWARD_MAX: reward = REWARD_MAX
+        angular_sum = 0.1 * (abs(self.sim.angular_v)).sum()
+
+        # reward low absolute velocity - we want to hover in position (this would punish
+        v__sum = 0.05 * (abs(self.sim.v)).sum()
+
+        reward = (1 / (1 + distance + angular_sum + v__sum)) * z_factor
+
         return reward
 
     def step(self, rotor_speeds):
@@ -69,3 +78,4 @@ class Task():
         self.sim.reset()
         state = np.concatenate([self.sim.pose] * self.action_repeat)
         return state
+

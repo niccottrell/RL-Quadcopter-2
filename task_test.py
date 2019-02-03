@@ -18,21 +18,29 @@ class TestTask(unittest.TestCase):
 
         task.sim.pose = init_pose
         reward_init = task.get_reward()
-        self.assertGreaterEqual(round(reward_init), 8.)
+        self.assertGreaterEqual(reward_init, 0.3)
         # Test from goal state
         task.sim.pose = target_pos + list([0, 0, 0])
         task.sim.v = np.array([0.0, 0.0, 0.0])  # no velocity
         reward_no_vol = task.get_reward()
-        self.assertGreaterEqual(reward_no_vol, 9)
+        self.assertGreaterEqual(reward_no_vol, 0.2)
         task.sim.v = np.array([0.1, 0.1, 0.1])  # low velocity
         reward_low_vol = task.get_reward()
-        self.assertGreater(reward_low_vol, 15)
+        self.assertGreater(reward_low_vol, 0.15)
         task.sim.v = np.array([1., 1., 1.])  # high velocity
         reward_high_vol = task.get_reward()
-        self.assertGreater(reward_high_vol, 5)
+        self.assertGreater(reward_high_vol, 0.12)
         # check consistency
         self.assertGreater(reward_no_vol, reward_low_vol)
         self.assertGreater(reward_low_vol, reward_high_vol)
+
+        # Test from target pos
+        task.reset()
+        task.sim.pose = target_pos + [0.0, 0.0, 0.0]
+        reward_target = task.get_reward()
+        self.assertGreaterEqual(reward_target, reward_init)
+        self.assertGreaterEqual(reward_target, 1)
+
 
     def test_negs(self):
         """
@@ -45,21 +53,21 @@ class TestTask(unittest.TestCase):
 
         task.sim.pose = init_pose
         reward_init = task.get_reward()
-        self.assertGreaterEqual(round(reward_init), 8.)
+        self.assertGreaterEqual(reward_init, 0.7)
         # Test from goal state
         task.sim.pose = target_neg + list([0, 0, 0])
         task.sim.v = np.array([0.0, 0.0, 0.0])  # no velocity
         reward_no_vol = task.get_reward()
         print("reward_no_vol=%d" % reward_no_vol)
-        self.assertGreaterEqual(reward_no_vol, 9)
+        self.assertGreaterEqual(reward_no_vol, 0.9)
         task.sim.v = np.array([0.1, 0.1, 0.1])  # low velocity
         reward_low_vol = task.get_reward()
         print("reward_low_vol=%d" % reward_low_vol)
-        self.assertGreater(reward_low_vol, 15)
+        self.assertGreater(reward_low_vol, 0.8)
         task.sim.v = np.array([1., 1., 1.])  # high velocity
         reward_high_vol = task.get_reward()
         print("reward_high_vol=%d" % reward_high_vol)
-        self.assertGreater(reward_high_vol, 5)
+        self.assertGreater(reward_high_vol, 0.7)
         # check consistency
         self.assertGreater(reward_no_vol, reward_low_vol)
         self.assertGreater(reward_low_vol, reward_high_vol)
@@ -72,13 +80,13 @@ class TestTask(unittest.TestCase):
         task.sim.v = np.array([1., 2., 3.])
         reward_crazy = task.get_reward()
         print("reward_crazy = %d", reward_crazy)
-        self.assertLess(reward_crazy, -15)
+        self.assertLess(reward_crazy, 0.2)
         self.assertGreaterEqual(reward_crazy, -REWARD_MAX)
         task.sim.pose = np.array([3., 1., 6.])
         task.sim.v = np.array([10., 0., 1.])
         reward_crazy2 = task.get_reward()
         print("reward_crazy2 = %d", reward_crazy2)
-        self.assertLess(reward_crazy2, -15)
+        self.assertLess(reward_crazy2, 0.2)
         self.assertGreaterEqual(reward_crazy2, -REWARD_MAX)
 
 
